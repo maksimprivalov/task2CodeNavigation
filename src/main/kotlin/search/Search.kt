@@ -27,7 +27,7 @@ data class OccurrenceImpl(
 fun searchForTextOccurrences(
     stringToSearch: String,
     directory: Path
-): Flow<Occurrence> = channelFlow {
+): Flow<Occurrence> = channelFlow {// create a concurrent flow
     require(stringToSearch.isNotEmpty()) { "Search string must not be empty" }
     require(Files.exists(directory)) { "Directory does not exist" }
 
@@ -36,16 +36,16 @@ fun searchForTextOccurrences(
         .collect(Collectors.toList())
 
     for (file in files) {
-        launch(Dispatchers.IO) {
+        launch(Dispatchers.IO) { // launch a coroutine for each file
             try {
-                file.toFile().useLines { lines ->
+                file.toFile().useLines { lines -> // lazy reading lines
                     lines.forEachIndexed { index, line ->
                         var startIndex = 0
                         while (true) {
                             val foundAt = line.indexOf(stringToSearch, startIndex)
                             if (foundAt == -1) break
-                            send(OccurrenceImpl(file, index + 1, foundAt + 1))
-                            startIndex = foundAt + stringToSearch.length
+                            send(OccurrenceImpl(file, index + 1, foundAt + 1)) // send occurrence to the flow
+                            startIndex = foundAt + stringToSearch.length // moving forward
                         }
                     }
                 }
